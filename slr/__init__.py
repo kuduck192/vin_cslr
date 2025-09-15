@@ -1,0 +1,1 @@
+from .slr import sign_language_recognition
