@@ -30,13 +30,17 @@ class RecognitionResult:
 class SLRWorker(threading.Thread):
     """Dedicated worker thread for Sign Language Recognition"""
     
-    def __init__(self, frame_queue: queue.Queue, result_queue: queue.Queue):
+    def __init__(self, frame_queue: queue.Queue, result_queue: queue.Queue,
+                 **slr_kwargs):
         super().__init__(daemon=True)
         self.frame_queue = frame_queue
         self.result_queue = result_queue
         self.running = True
-        self.processing_interval = 0.5  # Process every 0.5 seconds
+        self.processing_interval = slr_kwargs.get('processing_interval', 0.5)
         self.last_process_time = 0
+        
+        self.window_size_frames = slr_kwargs.get('window_size_frames', 60)
+        self.frame_buffer = deque(maxlen=self.window_size_frames)
         
     def run(self):
         """Main worker loop"""
@@ -45,18 +49,27 @@ class SLRWorker(threading.Thread):
         while self.running:
             try:
                 # Get frame from queue (timeout to allow checking running flag)
-                frame_data = self.frame_queue.get(timeout=0.1)
-                
-                if frame_data is None:  # Poison pill to stop worker
-                    break
-                
-                frame, frame_id, timestamp = frame_data
+                with self.frame_queue.mutex:
+                        q_list = list(self.frame_queue.queue)  # snapshot of queue contents
+
+                        # If poison-pill was enqueued (None), stop worker
+                        if any(item is None for item in q_list):
+                            break
+
+                        if not q_list:
+                            # nothing available yet, skip this iteration
+                            continue
+
+                        # Take the last N items (most recent)
+                        latest_items = q_list[-self.window_size_frames:]
+
+                clip = [frame for frame, *_ in latest_items]
                 current_time = time.time()
-                
                 # Check if enough time has passed since last processing
-                if current_time - self.last_process_time >= self.processing_interval:
-                    # Process the frame
-                    result = sign_language_recognition(frame)
+                if (current_time - self.last_process_time >= self.processing_interval and
+                    len(clip) >= self.window_size_frames):
+                    
+                    result = sign_language_recognition(clip)
                     
                     # Create result object
                     recognition_result = RecognitionResult(
@@ -69,15 +82,12 @@ class SLRWorker(threading.Thread):
                     # Put result in queue
                     self.result_queue.put(recognition_result)
                     self.last_process_time = current_time
-                    
-                    # Clear old frames from queue to process only latest
-                    while self.frame_queue.qsize() > 1:
-                        self.frame_queue.get_nowait()
                         
             except queue.Empty:
                 continue
             except Exception as e:
                 print(f"[SLR Worker] Error: {e}")
+                raise e
         
         print("[SLR Worker] Stopped")
     
@@ -145,9 +155,9 @@ class CSLRDemo:
         self.frame_counter = 0
         
         # Threading components
-        self.frame_queue = queue.Queue(maxsize=10)
-        self.result_queue = queue.Queue(maxsize=10)
-        self.tts_queue = queue.Queue(maxsize=10)
+        self.frame_queue = queue.Queue(maxsize=200)
+        self.result_queue = queue.Queue(maxsize=50)
+        self.tts_queue = queue.Queue(maxsize=50)
         
         # Worker threads
         self.slr_worker = None
@@ -155,7 +165,7 @@ class CSLRDemo:
         
         # Recognition settings
         self.confidence_threshold = 0.6
-        self.frame_skip = 15  # Send every Nth frame to SLR
+        self.frame_skip = 1  # Send every Nth frame to SLR
         
         # UI settings
         self.show_info_panel = True
@@ -227,6 +237,7 @@ class CSLRDemo:
     def process_frame_async(self, frame):
         """Send frame to SLR worker queue (non-blocking)"""
         self.frame_counter += 1
+        print("Frame Queue size:", self.frame_queue.qsize())
         
         # Only send every Nth frame to reduce processing load
         if self.frame_counter % self.frame_skip == 0:
@@ -236,8 +247,20 @@ class CSLRDemo:
                 self.frame_queue.put_nowait(frame_data)
                 self.performance_stats['frames_processed'] += 1
             except queue.Full:
-                # Queue is full, skip this frame
-                pass
+                # Queue is full: pop one oldest and retry once
+                try:
+                    self.frame_queue.get_nowait()
+                except queue.Empty:
+                    # nothing to pop
+                    pass
+
+                try:
+                    self.frame_queue.put_nowait(frame_data)
+                    self.performance_stats['frames_processed'] += 1
+                except queue.Full:
+                    # If still full, give up on this frame
+                    # (This should be rare if we popped above)
+                    pass
     
     def check_recognition_results(self):
         """Check for new recognition results (non-blocking)"""
