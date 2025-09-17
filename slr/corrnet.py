@@ -14,7 +14,7 @@ class CorrModel():
             loss_weights={'ConvCTC': 1.0, 'SeqCTC': 1.0, 'Dist': 25.0}
         )
 
-        state_dict = torch.load(MODEL_PATH, weights_only=False)['model_state_dict']
+        state_dict = torch.load(MODEL_PATH, weights_only=False, map_location=self.device)['model_state_dict']
         state_dict = OrderedDict([(k.replace('.module', ''), v) for k, v in state_dict.items()])
         self.model.load_state_dict(state_dict, strict=True)
         self.device = device
