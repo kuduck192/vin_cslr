@@ -156,7 +156,8 @@ class CenterCrop(object):
         try:
             im_h, im_w, im_c = clip[0].shape
         except ValueError:
-            print(clip[0].shape)
+            print("Invalid clip shape:", clip[0].shape)
+            raise ValueError()
         new_h, new_w = self.size
         new_h = im_h if new_h >= im_h else new_h
         new_w = im_w if new_w >= im_w else new_w
