@@ -1,9 +1,9 @@
 from dataclasses import dataclass
+from typing import Dict
 
 @dataclass
 class RecognitionResult:
-    """Data class for recognition results"""
     detected: bool
     text: str
     confidence: float
-    metadata: dict
+    metadata: Dict
