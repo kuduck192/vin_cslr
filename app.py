@@ -15,7 +15,7 @@ from typing import Optional
 from config import config
 
 # Import custom modules
-from tts import text_to_speech_async
+# from tts import text_to_speech_async
 
 from workers import SLRWorker, CameraWorker, TTSWorker
 
@@ -101,7 +101,7 @@ class CSLRApp:
         self.cam_worker.start()
         
         # Start SLR worker
-        self.slr_worker = SLRWorker(self.video_queue, self.slr_queue, self.stop_event, device='cuda')
+        self.slr_worker = SLRWorker(self.video_queue, self.slr_queue, self.stop_event, device='cpu')
         self.slr_worker.initialize()
         self.slr_worker.start()
         
