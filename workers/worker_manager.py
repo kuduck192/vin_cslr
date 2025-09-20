@@ -1,17 +1,27 @@
-from camera_worker import CameraWorker
-from cslr_worker import SLRWorker
+from .camera_worker import CameraWorker
+from .cslr_worker import SLRWorker
 import queue
 import threading
 import time
 
 class WorkerManager:
-    def __init__(self, video_queue: queue.Queue, result_queue: queue.Queue, model_name='corrnet', device='cpu'):
+    def __init__(self, video_queue: queue.Queue, result_queue: queue.Queue, model_name='corrnet', device='cpu', demo=None):
         self.video_queue = video_queue
         self.result_queue = result_queue
         self.stop_event = threading.Event()
-        self.camera_worker = CameraWorker(self.video_queue, self.stop_event)
-        self.slr_worker = SLRWorker(self.video_queue, self.result_queue, self.stop_event,
-                                    model_name=model_name, device=device)
+        
+        self.camera_worker = CameraWorker(
+            self.video_queue, 
+            self.result_queue, 
+            self.stop_event, 
+            demo=demo)
+        
+        self.slr_worker = SLRWorker(
+            self.video_queue, 
+            self.result_queue, 
+            self.stop_event,
+            model_name=model_name, 
+            device=device)
 
     def initialize(self):
         self.camera_worker.initialize()

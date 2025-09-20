@@ -14,12 +14,12 @@ class SLRWorker(threading.Thread):
         super().__init__(daemon=True)
         self.video_queue = video_queue
         self.result_queue = result_queue
+
+        # SLR processing parameters
         self.processing_interval = slr_kwargs.get('processing_interval', 0.5)
         self.last_process_time = 0
-
-        # self.window_size_frames = slr_kwargs.get('window_size_frames', 60)
-        # self.frame_buffer = deque(maxlen=self.window_size_frames)
         self.stop_event = stop_event
+
         self.model_name = model_name
         self.device = device
         self.model = None
@@ -32,21 +32,25 @@ class SLRWorker(threading.Thread):
     def run(self):
         """Process frames from the queue for sign language recognition."""
         self.initialize()
+
         while not self.stop_event.is_set():
             try:
                 if not self.video_queue.empty():
                     frames = self.video_queue.get()
                     recognition_result = self.model.sign_language_recognition(frames)
+
                     recognition_result = RecognitionResult(
                         text=recognition_result.get('text', ''),
                         confidence=recognition_result.get('confidence', 0.0),
                         detected=recognition_result.get('detected', False),
                         metadata=recognition_result.get('metadata', { }),
                     )
+
                     print(recognition_result)
                     self.result_queue.put(recognition_result)
                 else:
                     time.sleep(0.1)
+                    
             except Exception as e:
                 print(f"[SLR Worker] Error: {e}")
                 raise e
