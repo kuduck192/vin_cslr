@@ -22,7 +22,8 @@ def draw_ui(frame, demo):
     if demo.current_result and demo.current_result.detected:
         text = demo.current_result.text
         confidence = demo.current_result.confidence
-        color = (0,255,0) if confidence >= demo.confidence_threshold else (0,165,255)
+        # color = (0,255,0) if confidence >= demo.confidence_threshold else (0,165,255)
+        color = (0,255,0)
         cv2.rectangle(frame, (10,50),(width-10,100), color, 2)
         cv2.putText(frame, f"Detected: {text}", (20,80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
         cv2.putText(frame, f"Confidence: {confidence:.2%}", (20,95), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
