@@ -6,11 +6,32 @@ import numpy as np
 import sounddevice as sd
 from elevenlabs.client import ElevenLabs
 from elevenlabs import play
+from tts.config import API_KEY, VOICE_ID, MODEL_ID, SR
 
-API_KEY   = "2747bcf0e2a3b73607e6ca16828166d32fcc5e399b74f8c2faa88b8386ab2916"  
-VOICE_ID  = "21m00Tcm4TlvDq8ikWAM"              # Rachel
-MODEL_ID  = "eleven_multilingual_v2"            # model mới
-SR       = 22050                                # sample rate của PCM output
+class TTSModule():
+    def __init__(self, api_name: str):
+        self.api_name = api_name
+        self.client = self._init_api()
+
+    def _init_api(self):
+        if self.api_name == 'ElevenLab':
+            return ElevenLabs(api_key=API_KEY)
+        else:
+            return None
+    
+    def to_speech(self, text: str):
+        audio_stream = self.client.text_to_speech.convert(
+            text=text,
+            voice_id=VOICE_ID,
+            model_id=MODEL_ID,
+            output_format='pcm_22050'
+        )
+        with sd.OutputStream(samplerate=SR, channels=1, dtype="int16") as stream:
+            for chunk in audio_stream:
+                if not chunk:
+                    continue
+                frames = np.frombuffer(chunk, dtype=np.int16)
+                stream.write(frames)
 
 def read_text(path: str) -> str:
     with open(path, "r", encoding="utf-8") as f:

@@ -1,5 +1,6 @@
-from .camera_worker import CameraWorker
-from .cslr_worker import SLRWorker
+from workers.camera_worker import CameraWorker
+from workers.cslr_worker import SLRWorker
+from workers.tts_worker import TTSWorker
 import queue
 import threading
 import time
@@ -22,20 +23,31 @@ class WorkerManager:
             self.stop_event,
             model_name=model_name, 
             device=device)
+        
+        self.tts_worker = TTSWorker(
+            self.result_queue,
+            self.stop_event,
+            api_name='ElevenLab'
+        )
+
 
     def initialize(self):
         self.camera_worker.initialize()
         self.slr_worker.initialize()
+        self.tts_worker.initialize()
 
     def run(self):
         self.camera_worker.start()
         self.slr_worker.start()
+        self.tts_worker.start()
         print("[WorkerManager] Workers started")
 
     def close(self):
         self.stop_event.set()
         self.camera_worker.join()
         self.slr_worker.join()
+        self.tts_worker.join()
         self.camera_worker.close()
         self.slr_worker.close()
+        self.tts_worker.close()
         print("[WorkerManager] Workers stopped")

@@ -94,6 +94,9 @@ class SLRModule():
         text = self._extract_text(ret_dict.get("recognized_sents"))
         if not text.strip():
             text = self._extract_text(ret_dict.get("conv_sents"))
+        
+        parts = [p.split(",")[0].strip("() '") for p in text.split(")") if p.strip()]
+        text = " ".join(parts)
 
         confidence = self._compute_confidence(ret_dict)
         detected = bool(text.strip())

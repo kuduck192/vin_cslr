@@ -31,7 +31,7 @@ class SLRWorker(threading.Thread):
 
     def run(self):
         """Process frames from the queue for sign language recognition."""
-        self.initialize()
+        print("[SLR Worker] Started")
 
         while not self.stop_event.is_set():
             try:
