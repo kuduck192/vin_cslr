@@ -92,7 +92,10 @@ def _draw_debug_info(frame, demo):
     runtime = time.time() - demo.performance_stats['start_time']
     cv2.putText(frame, "=== Debug Info ===", (15, debug_y + 15), 
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
-    cv2.putText(frame, f"Queues - F:{demo.queue_sizes['frame']} R:{demo.queue_sizes['result']} T:{demo.queue_sizes['tts']}", 
+    queue_frame = demo.queue_sizes.get('frame', 0)
+    queue_result = demo.queue_sizes.get('result', 0)
+    queue_tts = demo.queue_sizes.get('tts', 0)
+    cv2.putText(frame, f"Queues - F:{queue_frame} R:{queue_result} T:{queue_tts}",
                 (15, debug_y + 35), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
     cv2.putText(frame, f"Frames sent: {demo.performance_stats['frames_processed']}", 
                 (15, debug_y + 55), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)

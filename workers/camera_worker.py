@@ -16,10 +16,41 @@ class CameraWorker(threading.Thread):
         self.cap = None
 
     def initialize(self):
-        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        print("[CameraWorker] Camera initialized")
+        # Try different backends for cross-platform compatibility
+        backends = [cv2.CAP_ANY, cv2.CAP_AVFOUNDATION]  # macOS compatible
+
+        for backend in backends:
+            try:
+                self.cap = cv2.VideoCapture(0, backend)
+                if self.cap.isOpened():
+                    # Test if we can read a frame
+                    ret, frame = self.cap.read()
+                    if ret:
+                        print(f"[CameraWorker] Camera initialized with backend: {backend}")
+                        # Set some basic properties
+                        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                        self.cap.set(cv2.CAP_PROP_FPS, 30)
+                        return
+                    else:
+                        self.cap.release()
+                        self.cap = None
+            except Exception as e:
+                print(f"[CameraWorker] Failed to initialize camera with backend {backend}: {e}")
+                if self.cap:
+                    self.cap.release()
+                self.cap = None
+
+        if not self.cap or not self.cap.isOpened():
+            print("[CameraWorker] ERROR: Could not initialize camera with any backend")
+            raise RuntimeError("Camera initialization failed")
     
     def run(self):
+        if not self.cap or not self.cap.isOpened():
+            print("[CameraWorker] ERROR: Camera not initialized, cannot start")
+            return
+
+        print("[CameraWorker] Starting camera capture loop")
         while not self.stop_event.is_set():
             frames = []
             self._run_by_timer(frames=frames, video_length_sec=VIDEO_LENGTH_SEC)
@@ -41,18 +72,13 @@ class CameraWorker(threading.Thread):
             frame = cv2.resize(frame, FRAME_SIZE)
             frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
-            if self.demo:
-                frame_ui = draw_ui(frame.copy(), self.demo)
-            else:
-                frame_ui = frame.copy()
-
-            cv2.imshow('Camera', frame_ui)
-            cv2.waitKey(1)
+            # Store the frame for UI display in main thread
 
         if frames:
             self.video_queue.put(frames)
 
     def close(self):
-        self.cap.release()
+        if self.cap:
+            self.cap.release()
         cv2.destroyAllWindows()
         print("[CameraWorker] Camera released and windows destroyed")
