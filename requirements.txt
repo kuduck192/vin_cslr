@@ -4,3 +4,6 @@ decord==0.6.0
 keyboard == 0.13.5
 sounddevice==0.5.2
 elevenlabs==2.16.0
+torch
+torchvision
+scipy
