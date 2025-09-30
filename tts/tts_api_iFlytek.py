@@ -15,8 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # === API Config (iFlyTek) ===
-APPID = "ga7aa423"
-APIKey = "f1a47b56ed5bd951ee1165fbfa13b3ef"
+APPID = "ga7aa423" 
+APIKey = "f1a47b56ed5bd951ee1165fbfa13b3ef" 
 APISecret = "bb110a7043d9587e0906abcabd6be8b7"
 
 class Ws_Param:
