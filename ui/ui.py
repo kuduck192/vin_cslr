@@ -22,7 +22,8 @@ def draw_ui(frame, demo):
     if demo.current_result and demo.current_result.detected:
         text = demo.current_result.text
         confidence = demo.current_result.confidence
-        color = (0,255,0) if confidence >= demo.confidence_threshold else (0,165,255)
+        # color = (0,255,0) if confidence >= demo.confidence_threshold else (0,165,255)
+        color = (0,255,0)
         cv2.rectangle(frame, (10,50),(width-10,100), color, 2)
         cv2.putText(frame, f"Detected: {text}", (20,80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
         cv2.putText(frame, f"Confidence: {confidence:.2%}", (20,95), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
@@ -91,7 +92,10 @@ def _draw_debug_info(frame, demo):
     runtime = time.time() - demo.performance_stats['start_time']
     cv2.putText(frame, "=== Debug Info ===", (15, debug_y + 15), 
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
-    cv2.putText(frame, f"Queues - F:{demo.queue_sizes['frame']} R:{demo.queue_sizes['result']} T:{demo.queue_sizes['tts']}", 
+    queue_frame = demo.queue_sizes.get('frame', 0)
+    queue_result = demo.queue_sizes.get('result', 0)
+    queue_tts = demo.queue_sizes.get('tts', 0)
+    cv2.putText(frame, f"Queues - F:{queue_frame} R:{queue_result} T:{queue_tts}",
                 (15, debug_y + 35), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
     cv2.putText(frame, f"Frames sent: {demo.performance_stats['frames_processed']}", 
                 (15, debug_y + 55), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
